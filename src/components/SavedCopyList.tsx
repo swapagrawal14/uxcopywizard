@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Trash2, Clock, Search } from 'lucide-react';
+import { useUser } from '@clerk/clerk-react';
 import { CopyResult } from '@/types';
 import { formatTimestamp, deleteSavedCopy } from '@/utils/copyUtils';
 import { Input } from '@/components/ui/input';
@@ -13,6 +14,7 @@ interface SavedCopyListProps {
 
 const SavedCopyList: React.FC<SavedCopyListProps> = ({ savedCopies, onSelect, onUpdate }) => {
   const [searchQuery, setSearchQuery] = React.useState('');
+  const { user, isSignedIn } = useUser();
 
   const filteredCopies = React.useMemo(() => {
     if (!searchQuery.trim()) return savedCopies;
@@ -26,7 +28,14 @@ const SavedCopyList: React.FC<SavedCopyListProps> = ({ savedCopies, onSelect, on
 
   const handleDelete = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    deleteSavedCopy(id);
+    
+    // Delete with user ID if signed in
+    if (isSignedIn && user) {
+      deleteSavedCopy(id, user.id);
+    } else {
+      deleteSavedCopy(id);
+    }
+    
     onUpdate();
   };
 

@@ -1,6 +1,7 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sparkles, FileText, HistoryIcon, ArrowRight } from 'lucide-react';
+import { useUser } from '@clerk/clerk-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
@@ -13,16 +14,30 @@ import { CopyResult, ToneType } from '@/types';
 import { generateCopyForContext, saveCopyResult, getSavedCopies } from '@/utils/copyUtils';
 import { toast } from '@/components/ui/use-toast';
 
-const CopyGenerator: React.FC = () => {
+interface CopyGeneratorProps {
+  defaultTab?: 'generate' | 'result' | 'saved';
+}
+
+const CopyGenerator: React.FC<CopyGeneratorProps> = ({ defaultTab = 'generate' }) => {
+  const { isSignedIn, user } = useUser();
   const [context, setContext] = useState('');
   const [tone, setTone] = useState<ToneType>('friendly');
   const [isGenerating, setIsGenerating] = useState(false);
   const [result, setResult] = useState<CopyResult | null>(null);
-  const [savedCopies, setSavedCopies] = useState<CopyResult[]>(getSavedCopies());
-  const [activeTab, setActiveTab] = useState('generate');
+  const [savedCopies, setSavedCopies] = useState<CopyResult[]>([]);
+  const [activeTab, setActiveTab] = useState(defaultTab);
   const [isSaved, setIsSaved] = useState(false);
   const [brandGuidelines, setBrandGuidelines] = useState('');
   const [abTestResults, setAbTestResults] = useState<CopyResult[]>([]);
+
+  // Load saved copies based on user status
+  useEffect(() => {
+    if (isSignedIn && user) {
+      setSavedCopies(getSavedCopies(user.id));
+    } else {
+      setSavedCopies(getSavedCopies());
+    }
+  }, [isSignedIn, user]);
 
   const handleGenerate = async () => {
     if (!context.trim()) {
@@ -50,6 +65,11 @@ const CopyGenerator: React.FC = () => {
         generatedResult.brandGuidelines = brandGuidelines;
       }
       
+      // Add user ID if signed in
+      if (isSignedIn && user) {
+        generatedResult.userId = user.id;
+      }
+      
       setResult(generatedResult);
       setActiveTab('result');
       setAbTestResults([]);
@@ -66,8 +86,15 @@ const CopyGenerator: React.FC = () => {
 
   const handleSave = () => {
     if (result) {
-      saveCopyResult(result);
-      setSavedCopies(getSavedCopies());
+      // Save with user ID if signed in
+      if (isSignedIn && user) {
+        saveCopyResult(result, user.id);
+        setSavedCopies(getSavedCopies(user.id));
+      } else {
+        saveCopyResult(result);
+        setSavedCopies(getSavedCopies());
+      }
+      
       setIsSaved(true);
       
       toast({
@@ -88,11 +115,19 @@ const CopyGenerator: React.FC = () => {
   };
 
   const handleNewAbTestResult = (abTestResult: CopyResult) => {
+    // Add user ID if signed in
+    if (isSignedIn && user) {
+      abTestResult.userId = user.id;
+    }
     setAbTestResults([...abTestResults, abTestResult]);
   };
 
   const refreshSavedCopies = () => {
-    setSavedCopies(getSavedCopies());
+    if (isSignedIn && user) {
+      setSavedCopies(getSavedCopies(user.id));
+    } else {
+      setSavedCopies(getSavedCopies());
+    }
   };
 
   return (
@@ -166,8 +201,13 @@ const CopyGenerator: React.FC = () => {
                   result={abTestResult} 
                   isSaved={false} 
                   onSave={() => {
-                    saveCopyResult(abTestResult);
-                    setSavedCopies(getSavedCopies());
+                    if (isSignedIn && user) {
+                      saveCopyResult(abTestResult, user.id);
+                      setSavedCopies(getSavedCopies(user.id));
+                    } else {
+                      saveCopyResult(abTestResult);
+                      setSavedCopies(getSavedCopies());
+                    }
                     toast({
                       title: "A/B Test Saved",
                       description: "Your test variation has been saved to your history.",

@@ -1,4 +1,3 @@
-
 import { CopyResult, ToneType } from "@/types";
 
 // Generate a unique ID for saved copies
@@ -29,22 +28,27 @@ export const generateCopyForContext = (context: string, tone: ToneType): Promise
   });
 };
 
-// Local storage functions
-export const saveCopyResult = (result: CopyResult): void => {
-  const savedCopies = getSavedCopies();
+// Modified to accept userId for user-specific storage
+export const saveCopyResult = (result: CopyResult, userId?: string): void => {
+  const storageKey = userId ? `savedCopies-${userId}` : 'savedCopies';
+  const savedCopies = getSavedCopies(userId);
   const updatedCopies = [result, ...savedCopies].slice(0, 50); // Keep only the last 50 items
-  localStorage.setItem('savedCopies', JSON.stringify(updatedCopies));
+  localStorage.setItem(storageKey, JSON.stringify(updatedCopies));
 };
 
-export const getSavedCopies = (): CopyResult[] => {
-  const saved = localStorage.getItem('savedCopies');
+// Modified to accept userId for user-specific retrieval
+export const getSavedCopies = (userId?: string): CopyResult[] => {
+  const storageKey = userId ? `savedCopies-${userId}` : 'savedCopies';
+  const saved = localStorage.getItem(storageKey);
   return saved ? JSON.parse(saved) : [];
 };
 
-export const deleteSavedCopy = (id: string): void => {
-  const savedCopies = getSavedCopies();
+// Modified to accept userId for user-specific deletion
+export const deleteSavedCopy = (id: string, userId?: string): void => {
+  const storageKey = userId ? `savedCopies-${userId}` : 'savedCopies';
+  const savedCopies = getSavedCopies(userId);
   const filteredCopies = savedCopies.filter(copy => copy.id !== id);
-  localStorage.setItem('savedCopies', JSON.stringify(filteredCopies));
+  localStorage.setItem(storageKey, JSON.stringify(filteredCopies));
 };
 
 export const formatTimestamp = (timestamp: number): string => {

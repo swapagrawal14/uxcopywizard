@@ -15,6 +15,7 @@ export interface CopyResult {
   tone: ToneType;
   timestamp: number;
   brandGuidelines?: string;
+  userId?: string; // Add userId field to track which user created this copy
   copy: {
     headline?: string;
     microcopy: string[];

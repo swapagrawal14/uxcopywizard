@@ -3,7 +3,11 @@ import React from 'react';
 import Header from '@/components/Header';
 import CopyGenerator from '@/components/CopyGenerator';
 
-const Index: React.FC = () => {
+interface IndexProps {
+  defaultTab?: 'generate' | 'result' | 'saved';
+}
+
+const Index: React.FC<IndexProps> = ({ defaultTab }) => {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
@@ -20,7 +24,7 @@ const Index: React.FC = () => {
             </p>
           </div>
           
-          <CopyGenerator />
+          <CopyGenerator defaultTab={defaultTab} />
         </div>
       </main>
       

@@ -4,12 +4,16 @@ import { Copy, Check, BookmarkPlus, BookmarkCheck, RefreshCw } from 'lucide-reac
 import { CopyResult } from '@/types';
 import { formatTimestamp } from '@/utils/copyUtils';
 import { toast } from '@/components/ui/use-toast';
+import EditableText from './EditableText';
+import ExportOptions from './ExportOptions';
+import ABTestingGenerator from './ABTestingGenerator';
 
 interface ResultCardProps {
   result: CopyResult;
   isSaved: boolean;
   onSave: () => void;
   onRegenerate?: () => void;
+  onNewResultGenerated?: (result: CopyResult) => void;
   className?: string;
 }
 
@@ -18,9 +22,16 @@ const ResultCard: React.FC<ResultCardProps> = ({
   isSaved, 
   onSave, 
   onRegenerate, 
+  onNewResultGenerated,
   className = "" 
 }) => {
   const [copiedSection, setCopiedSection] = useState<string | null>(null);
+  const [localResult, setLocalResult] = useState<CopyResult>(result);
+
+  // Update localResult when result prop changes
+  React.useEffect(() => {
+    setLocalResult(result);
+  }, [result]);
 
   const copyToClipboard = (text: string, section: string) => {
     navigator.clipboard.writeText(text);
@@ -37,19 +48,60 @@ const ResultCard: React.FC<ResultCardProps> = ({
     }, 2000);
   };
 
+  const handleUpdateMicrocopy = (text: string, index: number) => {
+    const updatedMicrocopy = [...localResult.copy.microcopy];
+    updatedMicrocopy[index] = text;
+    
+    setLocalResult({
+      ...localResult,
+      copy: {
+        ...localResult.copy,
+        microcopy: updatedMicrocopy,
+      }
+    });
+  };
+
+  const handleUpdateButton = (text: string, index: number) => {
+    const updatedButtons = [...localResult.copy.buttonText];
+    updatedButtons[index] = text;
+    
+    setLocalResult({
+      ...localResult,
+      copy: {
+        ...localResult.copy,
+        buttonText: updatedButtons,
+      }
+    });
+  };
+
+  const handleUpdateError = (text: string, index: number) => {
+    if (!localResult.copy.errorMessages) return;
+    
+    const updatedErrors = [...localResult.copy.errorMessages];
+    updatedErrors[index] = text;
+    
+    setLocalResult({
+      ...localResult,
+      copy: {
+        ...localResult.copy,
+        errorMessages: updatedErrors,
+      }
+    });
+  };
+
   return (
     <div className={`rounded-lg border border-border bg-card p-5 shadow-subtle ${className} animate-slide-up`}>
       <div className="flex items-center justify-between mb-4">
         <div>
           <div className="flex items-center gap-2">
             <span className="text-xs px-2 py-0.5 rounded-full bg-accent text-accent-foreground font-medium">
-              {result.tone.charAt(0).toUpperCase() + result.tone.slice(1)}
+              {localResult.tone.charAt(0).toUpperCase() + localResult.tone.slice(1)}
             </span>
             <span className="text-xs text-muted-foreground">
-              {formatTimestamp(result.timestamp)}
+              {formatTimestamp(localResult.timestamp)}
             </span>
           </div>
-          <h3 className="font-medium mt-1 text-sm sm:text-base">{result.context}</h3>
+          <h3 className="font-medium mt-1 text-sm sm:text-base">{localResult.context}</h3>
         </div>
         <div className="flex items-center gap-2">
           {onRegenerate && (
@@ -81,7 +133,7 @@ const ResultCard: React.FC<ResultCardProps> = ({
           <div className="flex items-center justify-between">
             <h4 className="text-sm font-medium">Microcopy Variations</h4>
             <button 
-              onClick={() => copyToClipboard(result.copy.microcopy.join('\n\n'), 'microcopy')}
+              onClick={() => copyToClipboard(localResult.copy.microcopy.join('\n\n'), 'microcopy')}
               className="flex items-center text-xs text-muted-foreground hover:text-foreground transition-colors focus-ring rounded-sm"
             >
               {copiedSection === 'microcopy' ? (
@@ -98,22 +150,14 @@ const ResultCard: React.FC<ResultCardProps> = ({
             </button>
           </div>
           <div className="space-y-2">
-            {result.copy.microcopy.map((text, i) => (
-              <div key={i} className="relative group">
-                <div className="p-3 rounded-md bg-secondary/50 text-sm">
-                  {text}
-                </div>
-                <button
-                  onClick={() => copyToClipboard(text, `microcopy-${i}`)}
-                  className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md hover:bg-background"
-                >
-                  {copiedSection === `microcopy-${i}` ? (
-                    <Check className="h-3 w-3" />
-                  ) : (
-                    <Copy className="h-3 w-3" />
-                  )}
-                </button>
-              </div>
+            {localResult.copy.microcopy.map((text, i) => (
+              <EditableText
+                key={i}
+                text={text}
+                onSave={(newText) => handleUpdateMicrocopy(newText, i)}
+                className="relative group"
+                textClassName="p-3 rounded-md bg-secondary/50 text-sm"
+              />
             ))}
           </div>
         </div>
@@ -123,7 +167,7 @@ const ResultCard: React.FC<ResultCardProps> = ({
           <div className="flex items-center justify-between">
             <h4 className="text-sm font-medium">Button Text Options</h4>
             <button 
-              onClick={() => copyToClipboard(result.copy.buttonText.join(', '), 'buttons')}
+              onClick={() => copyToClipboard(localResult.copy.buttonText.join(', '), 'buttons')}
               className="flex items-center text-xs text-muted-foreground hover:text-foreground transition-colors focus-ring rounded-sm"
             >
               {copiedSection === 'buttons' ? (
@@ -140,7 +184,7 @@ const ResultCard: React.FC<ResultCardProps> = ({
             </button>
           </div>
           <div className="flex flex-wrap gap-2">
-            {result.copy.buttonText.map((text, i) => (
+            {localResult.copy.buttonText.map((text, i) => (
               <div key={i} className="relative group">
                 <button
                   type="button"
@@ -149,28 +193,32 @@ const ResultCard: React.FC<ResultCardProps> = ({
                 >
                   {text}
                 </button>
-                <button
-                  onClick={() => copyToClipboard(text, `button-${i}`)}
-                  className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-full bg-background border border-border"
-                >
-                  {copiedSection === `button-${i}` ? (
-                    <Check className="h-3 w-3" />
-                  ) : (
-                    <Copy className="h-3 w-3" />
-                  )}
-                </button>
+                <div className="absolute -top-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="bg-card rounded-md shadow-md p-2 flex gap-1 border border-border">
+                    <button
+                      onClick={() => copyToClipboard(text, `button-${i}`)}
+                      className="p-1 rounded-full hover:bg-secondary"
+                    >
+                      {copiedSection === `button-${i}` ? (
+                        <Check className="h-3 w-3" />
+                      ) : (
+                        <Copy className="h-3 w-3" />
+                      )}
+                    </button>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
         </div>
 
         {/* Error messages section */}
-        {result.copy.errorMessages && (
+        {localResult.copy.errorMessages && (
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <h4 className="text-sm font-medium">Error Messages</h4>
               <button 
-                onClick={() => copyToClipboard(result.copy.errorMessages!.join('\n\n'), 'errors')}
+                onClick={() => copyToClipboard(localResult.copy.errorMessages!.join('\n\n'), 'errors')}
                 className="flex items-center text-xs text-muted-foreground hover:text-foreground transition-colors focus-ring rounded-sm"
               >
                 {copiedSection === 'errors' ? (
@@ -187,25 +235,27 @@ const ResultCard: React.FC<ResultCardProps> = ({
               </button>
             </div>
             <div className="space-y-2">
-              {result.copy.errorMessages.map((text, i) => (
-                <div key={i} className="relative group">
-                  <div className="p-3 rounded-md bg-destructive/10 text-sm border-l-2 border-destructive">
-                    {text}
-                  </div>
-                  <button
-                    onClick={() => copyToClipboard(text, `error-${i}`)}
-                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md hover:bg-background"
-                  >
-                    {copiedSection === `error-${i}` ? (
-                      <Check className="h-3 w-3" />
-                    ) : (
-                      <Copy className="h-3 w-3" />
-                    )}
-                  </button>
-                </div>
+              {localResult.copy.errorMessages.map((text, i) => (
+                <EditableText
+                  key={i}
+                  text={text}
+                  onSave={(newText) => handleUpdateError(newText, i)}
+                  className="relative group"
+                  textClassName="p-3 rounded-md bg-destructive/10 text-sm border-l-2 border-destructive"
+                />
               ))}
             </div>
           </div>
+        )}
+      </div>
+
+      <div className="mt-6 flex justify-end gap-2">
+        <ExportOptions result={localResult} />
+        {onNewResultGenerated && (
+          <ABTestingGenerator 
+            currentResult={localResult} 
+            onNewResultGenerated={onNewResultGenerated} 
+          />
         )}
       </div>
     </div>

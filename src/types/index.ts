@@ -14,6 +14,7 @@ export interface CopyResult {
   context: string;
   tone: ToneType;
   timestamp: number;
+  brandGuidelines?: string;
   copy: {
     headline?: string;
     microcopy: string[];
@@ -26,4 +27,12 @@ export interface ToneOption {
   value: ToneType;
   label: string;
   description: string;
+}
+
+export interface EditableField {
+  id: string;
+  type: 'microcopy' | 'button' | 'error';
+  index: number;
+  text: string;
+  originalText: string;
 }

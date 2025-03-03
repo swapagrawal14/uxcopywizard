@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import ToneSelector from './ToneSelector';
 import ResultCard from './ResultCard';
 import SavedCopyList from './SavedCopyList';
+import BrandGuidelinesUpload from './BrandGuidelinesUpload';
 import { CopyResult, ToneType } from '@/types';
 import { generateCopyForContext, saveCopyResult, getSavedCopies } from '@/utils/copyUtils';
 import { toast } from '@/components/ui/use-toast';
@@ -20,6 +21,8 @@ const CopyGenerator: React.FC = () => {
   const [savedCopies, setSavedCopies] = useState<CopyResult[]>(getSavedCopies());
   const [activeTab, setActiveTab] = useState('generate');
   const [isSaved, setIsSaved] = useState(false);
+  const [brandGuidelines, setBrandGuidelines] = useState('');
+  const [abTestResults, setAbTestResults] = useState<CopyResult[]>([]);
 
   const handleGenerate = async () => {
     if (!context.trim()) {
@@ -35,9 +38,21 @@ const CopyGenerator: React.FC = () => {
     setIsSaved(false);
     
     try {
-      const generatedResult = await generateCopyForContext(context.trim(), tone);
+      // Include brand guidelines in generation if provided
+      const contextWithGuidelines = brandGuidelines 
+        ? `${context.trim()} - Guidelines: ${brandGuidelines.substring(0, 300)}` 
+        : context.trim();
+        
+      const generatedResult = await generateCopyForContext(contextWithGuidelines, tone);
+      
+      // Add brand guidelines to result for future reference
+      if (brandGuidelines) {
+        generatedResult.brandGuidelines = brandGuidelines;
+      }
+      
       setResult(generatedResult);
       setActiveTab('result');
+      setAbTestResults([]);
     } catch (error) {
       toast({
         title: "Generation failed",
@@ -66,8 +81,14 @@ const CopyGenerator: React.FC = () => {
     setResult(copy);
     setContext(copy.context);
     setTone(copy.tone);
+    setBrandGuidelines(copy.brandGuidelines || '');
     setIsSaved(true);
     setActiveTab('result');
+    setAbTestResults([]);
+  };
+
+  const handleNewAbTestResult = (abTestResult: CopyResult) => {
+    setAbTestResults([...abTestResults, abTestResult]);
   };
 
   const refreshSavedCopies = () => {
@@ -109,6 +130,11 @@ const CopyGenerator: React.FC = () => {
             />
           </div>
 
+          <BrandGuidelinesUpload 
+            value={brandGuidelines}
+            onChange={setBrandGuidelines}
+          />
+
           <ToneSelector selectedTone={tone} onChange={setTone} />
 
           <div className="flex items-center gap-2">
@@ -125,12 +151,32 @@ const CopyGenerator: React.FC = () => {
 
         <TabsContent value="result" className="space-y-6 animate-fade-in">
           {result && (
-            <ResultCard 
-              result={result} 
-              isSaved={isSaved} 
-              onSave={handleSave} 
-              onRegenerate={handleGenerate}
-            />
+            <>
+              <ResultCard 
+                result={result} 
+                isSaved={isSaved} 
+                onSave={handleSave} 
+                onRegenerate={handleGenerate}
+                onNewResultGenerated={handleNewAbTestResult}
+              />
+              
+              {abTestResults.map((abTestResult, index) => (
+                <ResultCard 
+                  key={`abtest-${index}-${abTestResult.id}`}
+                  result={abTestResult} 
+                  isSaved={false} 
+                  onSave={() => {
+                    saveCopyResult(abTestResult);
+                    setSavedCopies(getSavedCopies());
+                    toast({
+                      title: "A/B Test Saved",
+                      description: "Your test variation has been saved to your history.",
+                    });
+                  }}
+                  className="border-l-4 border-primary"
+                />
+              ))}
+            </>
           )}
         </TabsContent>
 

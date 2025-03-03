@@ -1,21 +1,19 @@
-
 import React, { useState, useEffect } from 'react';
 import { Sparkles, FileText, HistoryIcon, ArrowRight } from 'lucide-react';
 import { useUser } from '@clerk/clerk-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import ToneSelector from './ToneSelector';
 import ResultCard from './ResultCard';
 import SavedCopyList from './SavedCopyList';
 import BrandGuidelinesUpload from './BrandGuidelinesUpload';
-import { CopyResult, ToneType } from '@/types';
+import { CopyResult, ToneType, TabType } from '@/types';
 import { generateCopyForContext, saveCopyResult, getSavedCopies } from '@/utils/copyUtils';
 import { toast } from '@/components/ui/use-toast';
 
 interface CopyGeneratorProps {
-  defaultTab?: 'generate' | 'result' | 'saved';
+  defaultTab?: TabType;
 }
 
 const CopyGenerator: React.FC<CopyGeneratorProps> = ({ defaultTab = 'generate' }) => {
@@ -25,12 +23,11 @@ const CopyGenerator: React.FC<CopyGeneratorProps> = ({ defaultTab = 'generate' }
   const [isGenerating, setIsGenerating] = useState(false);
   const [result, setResult] = useState<CopyResult | null>(null);
   const [savedCopies, setSavedCopies] = useState<CopyResult[]>([]);
-  const [activeTab, setActiveTab] = useState<'generate' | 'result' | 'saved'>(defaultTab);
+  const [activeTab, setActiveTab] = useState<TabType>(defaultTab);
   const [isSaved, setIsSaved] = useState(false);
   const [brandGuidelines, setBrandGuidelines] = useState('');
   const [abTestResults, setAbTestResults] = useState<CopyResult[]>([]);
 
-  // Load saved copies based on user status
   useEffect(() => {
     if (isSignedIn && user) {
       setSavedCopies(getSavedCopies(user.id));
@@ -53,19 +50,16 @@ const CopyGenerator: React.FC<CopyGeneratorProps> = ({ defaultTab = 'generate' }
     setIsSaved(false);
     
     try {
-      // Include brand guidelines in generation if provided
       const contextWithGuidelines = brandGuidelines 
         ? `${context.trim()} - Guidelines: ${brandGuidelines.substring(0, 300)}` 
         : context.trim();
         
       const generatedResult = await generateCopyForContext(contextWithGuidelines, tone);
       
-      // Add brand guidelines to result for future reference
       if (brandGuidelines) {
         generatedResult.brandGuidelines = brandGuidelines;
       }
       
-      // Add user ID if signed in
       if (isSignedIn && user) {
         generatedResult.userId = user.id;
       }
@@ -86,7 +80,6 @@ const CopyGenerator: React.FC<CopyGeneratorProps> = ({ defaultTab = 'generate' }
 
   const handleSave = () => {
     if (result) {
-      // Save with user ID if signed in
       if (isSignedIn && user) {
         saveCopyResult(result, user.id);
         setSavedCopies(getSavedCopies(user.id));
@@ -115,7 +108,6 @@ const CopyGenerator: React.FC<CopyGeneratorProps> = ({ defaultTab = 'generate' }
   };
 
   const handleNewAbTestResult = (abTestResult: CopyResult) => {
-    // Add user ID if signed in
     if (isSignedIn && user) {
       abTestResult.userId = user.id;
     }
@@ -132,7 +124,7 @@ const CopyGenerator: React.FC<CopyGeneratorProps> = ({ defaultTab = 'generate' }
 
   return (
     <div className="max-w-4xl mx-auto">
-      <Tabs value={activeTab} onValueChange={(value: 'generate' | 'result' | 'saved') => setActiveTab(value)} className="w-full">
+      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as TabType)} className="w-full">
         <TabsList className="grid grid-cols-3 mb-6">
           <TabsTrigger value="generate" className="flex items-center gap-1.5">
             <Sparkles className="h-4 w-4" />

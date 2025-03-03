@@ -9,7 +9,7 @@ const Header: React.FC = () => {
   const { isSignedIn } = useUser();
 
   return (
-    <header className="border-b border-border">
+    <header className="border-b border-border bg-white">
       <div className="container flex items-center justify-between h-16 px-4 sm:px-6">
         <Link to="/" className="flex items-center space-x-2">
           <Sparkles className="h-5 w-5 text-primary" />

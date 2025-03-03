@@ -2,9 +2,10 @@
 import React from 'react';
 import Header from '@/components/Header';
 import CopyGenerator from '@/components/CopyGenerator';
+import { TabType } from '@/types';
 
 interface IndexProps {
-  defaultTab?: 'generate' | 'result' | 'saved';
+  defaultTab?: TabType;
 }
 
 const Index: React.FC<IndexProps> = ({ defaultTab }) => {

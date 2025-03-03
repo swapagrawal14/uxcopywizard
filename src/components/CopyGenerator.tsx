@@ -25,7 +25,7 @@ const CopyGenerator: React.FC<CopyGeneratorProps> = ({ defaultTab = 'generate' }
   const [isGenerating, setIsGenerating] = useState(false);
   const [result, setResult] = useState<CopyResult | null>(null);
   const [savedCopies, setSavedCopies] = useState<CopyResult[]>([]);
-  const [activeTab, setActiveTab] = useState(defaultTab);
+  const [activeTab, setActiveTab] = useState<'generate' | 'result' | 'saved'>(defaultTab);
   const [isSaved, setIsSaved] = useState(false);
   const [brandGuidelines, setBrandGuidelines] = useState('');
   const [abTestResults, setAbTestResults] = useState<CopyResult[]>([]);
@@ -132,7 +132,7 @@ const CopyGenerator: React.FC<CopyGeneratorProps> = ({ defaultTab = 'generate' }
 
   return (
     <div className="max-w-4xl mx-auto">
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+      <Tabs value={activeTab} onValueChange={(value: 'generate' | 'result' | 'saved') => setActiveTab(value)} className="w-full">
         <TabsList className="grid grid-cols-3 mb-6">
           <TabsTrigger value="generate" className="flex items-center gap-1.5">
             <Sparkles className="h-4 w-4" />

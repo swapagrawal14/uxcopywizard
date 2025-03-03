@@ -9,6 +9,8 @@ export type ToneType =
   | 'enthusiastic' 
   | 'technical';
 
+export type TabType = 'generate' | 'result' | 'saved';
+
 export interface CopyResult {
   id: string;
   context: string;

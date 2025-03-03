@@ -38,7 +38,7 @@ const Header: React.FC = () => {
                   Sign in
                 </Button>
               </SignInButton>
-              <SignInButton mode="modal" afterSignInUrl="/">
+              <SignInButton mode="modal">
                 <Button size="sm">
                   Get Started
                 </Button>
